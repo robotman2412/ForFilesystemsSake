@@ -19,6 +19,7 @@ public abstract class FFSBase {
 	
 	protected boolean isInitialised;
 	protected Header header;
+	protected long rootFolder;
 	
 	public byte[] getOSData() {
 		return header.osData;
@@ -48,7 +49,8 @@ public abstract class FFSBase {
 		if (isInitialised) {
 			return;
 		}
-		header = new Header(new BlockReadDataPacker(this, 0));
+		BlockReadDataPacker data = new BlockReadDataPacker(this, 0);
+		header = new Header(data);
 		isInitialised = true;
 	}
 	
@@ -71,7 +73,7 @@ public abstract class FFSBase {
 		List<Block> blocks = new ArrayList<>();
 		Block lastBlock;
 		blocks.add(lastBlock = startingBlock);
-		while (lastBlock.nextBlockId != lastBlock.id && lastBlock.id != 0) {
+		while (lastBlock.nextBlockId != lastBlock.id && lastBlock.nextBlockId != 0) {
 			blocks.add(lastBlock = getBlock(lastBlock.nextBlockId));
 		}
 		for (Block block : blocks) {
@@ -86,10 +88,11 @@ public abstract class FFSBase {
 		Block lastBlock;
 		blocks.add(lastBlock = getBlock(startingId));
 		while (lastBlock.nextBlockId != lastBlock.id) {
-			if (lastBlock.id == 0) {
+			Block nextBlock = getBlock(lastBlock.nextBlockId);
+			if (nextBlock.nextBlockId == 0) {
 				throw new IOException(String.format("Block %08x points at block %08x, but block %08x is marked unused!", lastBlock.id, lastBlock.nextBlockId, lastBlock.nextBlockId));
 			}
-			blocks.add(lastBlock = getBlock(lastBlock.nextBlockId));
+			blocks.add(lastBlock = nextBlock);
 		}
 		return blocks.toArray(new Block[0]);
 	}
@@ -140,7 +143,7 @@ public abstract class FFSBase {
 			blockLength = data.readShort();
 			numBlocks = data.readInt() & (long) 0xFFFFFFFF;
 			blocksUsed = data.readInt() & (long) 0xFFFFFFFF;
-			name = new String(data.readArrRaw(data.readShort() & 0xFFFF));
+			name = new String(data.readArrRaw(data.readShort() & 0xFFFF), StandardCharsets.US_ASCII);
 			osData = data.readArr(data.readShort() & 0xFFFF);
 		}
 		

@@ -4,6 +4,7 @@ import jutils.JUtils;
 import jutils.database.DataPacker;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * You don't need to use this class to use FFS.
@@ -152,7 +153,7 @@ public class BlockReadDataPacker extends DataPacker {
 	
 	/** Used to load a string from the buffer. */
 	public String readString() {
-		return new String(readArr());
+		return new String(readArr(), StandardCharsets.US_ASCII);
 	}
 	
 }

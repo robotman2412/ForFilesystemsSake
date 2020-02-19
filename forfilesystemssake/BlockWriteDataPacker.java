@@ -4,6 +4,7 @@ import jutils.JUtils;
 import jutils.database.DataPacker;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * You don't need to use this class to use FFS.
@@ -12,16 +13,19 @@ public class BlockWriteDataPacker extends DataPacker {
 	
 	protected FFSBase fs;
 	protected Block block;
+	protected boolean closed;
 	
 	public BlockWriteDataPacker(FFSBase fs) throws IOException {
 		this.fs = fs;
 		block = fs.getFreeBlock();
 		block.nextBlockId = block.id;
+		closed = false;
 	}
 	
 	public BlockWriteDataPacker(FFSBase fs, long startingBlock) throws IOException {
 		this.fs = fs;
 		block = fs.getBlock(startingBlock);
+		closed = false;
 	}
 	
 	/** Used to add an existing byte array on to the buffer.
@@ -99,14 +103,18 @@ public class BlockWriteDataPacker extends DataPacker {
 	
 	/** Used to convert a string to bytes and append it to the buffer. */
 	public void addString(String mData) {
-		addArr(mData.getBytes());
+		addArr(mData.getBytes(StandardCharsets.US_ASCII));
 	}
 	
 	public void close() throws IOException {
+		if (closed) {
+			return;
+		}
 		if (block.nextBlockId != block.id) {
 			fs.deleteBlocks(fs.getBlock(block.nextBlockId));
 		}
 		fs.setBlock(block.id, block);
+		closed = true;
 	}
 	
 	@Override
